@@ -2,8 +2,5 @@
   "buildCommand": "bun install && bun run build",
   "outputDirectory": "dist",
   "cleanUrls": true,
-  "trailingSlash": false,
-  "env": {
-    "VITE_API_URL": "@vite_api_url"
-  }
+  "trailingSlash": false
 }
