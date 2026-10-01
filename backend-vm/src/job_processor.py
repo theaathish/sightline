@@ -69,8 +69,12 @@ class JobProcessor:
             elif job_type == "fix":
                 result = await self.fix_pr_skill.run(job)
             elif job_type == "track_prompts":
+                if not self.config.enable_ai_tracking:
+                    raise ValueError("AI tracking disabled: No LLM API keys configured")
                 result = await self.track_skill.run(job)
             elif job_type == "verify_merge":
+                if not self.config.enable_ai_tracking:
+                    raise ValueError("AI tracking disabled: No LLM API keys configured")
                 result = await self.verify_skill.run(job)
             else:
                 raise ValueError(f"Unknown job type: {job_type}")
