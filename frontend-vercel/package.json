@@ -65,14 +65,12 @@
     "tailwindcss": "^4.2.1",
     "tw-animate-css": "^1.3.4",
     "vaul": "^1.1.2",
-    "vite-tsconfig-paths": "^6.0.2",
     "zod": "^3.25.76"
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
     "@tanstack/devtools-vite": "^0.8.1",
-    "@tanstack/react-start": "1.168.60",
-    "@tanstack/router-generator": "^1.170.41",
+    "@tanstack/router-generator": "1.171.34",
     "@types/node": "^22.16.5",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
