@@ -4,4 +4,4 @@ saveTextLockfile = true
 minimumReleaseAge = 86400
 # Each entry bypasses the 24h guard for one package — confirm with the user
 # before adding any.
-minimumReleaseAgeExcludes = ["@tanstack/react-start"]
+minimumReleaseAgeExcludes = ["@tanstack/react-start", "@lovable.dev/vite-tanstack-config"]
