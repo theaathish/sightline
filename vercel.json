@@ -1,0 +1,10 @@
+{
+  "buildCommand": "cd frontend-vercel && bun install && bun run build",
+  "outputDirectory": "frontend-vercel/dist",
+  "public": true,
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "env": {
+    "VITE_API_URL": "@vite_api_url"
+  }
+}
