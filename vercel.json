@@ -1,6 +1,7 @@
 {
-  "buildCommand": "cd frontend-vercel && bun install && bun run build",
-  "outputDirectory": "frontend-vercel/dist",
+  "root": "frontend-vercel",
+  "buildCommand": "bun install && bun run build",
+  "outputDirectory": "dist",
   "public": true,
   "cleanUrls": true,
   "trailingSlash": false,
