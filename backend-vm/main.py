@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Sightline Backend - Hermes Worker
-Main entry point for the background job processor
+Main entry point for the background job processor and webhook server
 """
 
 import asyncio
@@ -28,10 +28,27 @@ async def main():
     try:
         from src.config import Config
         from src.worker import HermesWorker
+        from src.webhook import WebhookHandler
+        from src.firebase_client import FirebaseClient
+        import threading
         
         # Load config
         config = Config.from_env()
         logger.info(f"Hermes Worker starting for org: {config.org_id}")
+        
+        # Initialize Firebase
+        firebase = FirebaseClient(config)
+        
+        # Start webhook server in background thread
+        logger.info("Starting webhook server...")
+        webhook = WebhookHandler(config, firebase)
+        webhook_thread = threading.Thread(
+            target=webhook.run,
+            kwargs={"host": "0.0.0.0", "port": 8000},
+            daemon=True
+        )
+        webhook_thread.start()
+        logger.info("Webhook server started on port 8000")
         
         # Create and start worker
         worker = HermesWorker(config)

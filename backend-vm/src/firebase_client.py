@@ -43,6 +43,35 @@ class FirebaseClient:
             logger.error(f"Firebase initialization failed: {e}")
             raise
     
+    async def create_job(
+        self,
+        org_id: str,
+        job_type: str,
+        site_id: str,
+        data: Dict[str, Any]
+    ) -> str:
+        """Create a new job and return job ID"""
+        try:
+            job_doc = {
+                "org_id": org_id,
+                "type": job_type,
+                "site_id": site_id,
+                "status": "queued",
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow(),
+                "cost": 0.0,
+                "data": data,
+            }
+            
+            doc_ref = self.db.collection("jobs").add(job_doc)
+            job_id = doc_ref[1].id
+            logger.info(f"Created job {job_id}: {job_type} for org {org_id}")
+            return job_id
+        
+        except Exception as e:
+            logger.error(f"Error creating job: {e}")
+            raise
+    
     async def get_queued_jobs(self, org_id: str) -> List[Dict[str, Any]]:
         """Get all queued jobs for org"""
         try:
@@ -64,6 +93,29 @@ class FirebaseClient:
         
         except Exception as e:
             logger.error(f"Error fetching jobs: {e}")
+            return []
+    
+    async def get_org_jobs(self, org_id: str) -> List[Dict[str, Any]]:
+        """Get all jobs for an org with status"""
+        try:
+            docs = (
+                self.db.collection("jobs")
+                .where("org_id", "==", org_id)
+                .order_by("created_at", direction="DESCENDING")
+                .limit(50)
+                .stream()
+            )
+            
+            jobs = []
+            for doc in docs:
+                job_data = doc.to_dict()
+                job_data["id"] = doc.id
+                jobs.append(job_data)
+            
+            return jobs
+        
+        except Exception as e:
+            logger.error(f"Error fetching org jobs: {e}")
             return []
     
     async def update_job_status(
