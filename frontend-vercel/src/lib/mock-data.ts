@@ -54,7 +54,8 @@ export const issues: Issue[] = [
     area: "Sitemap",
     priority: "Critical",
     pages: 42,
-    detail: "Your sitemap.xml lists 118 URLs but the site publishes 160. Search engines may never find the rest.",
+    detail:
+      "Your sitemap.xml lists 118 URLs but the site publishes 160. Search engines may never find the rest.",
     fix: "Regenerate the sitemap so every published page is listed, then resubmit it in Search Console.",
   },
   {
@@ -224,7 +225,8 @@ export const drafts: Draft[] = [
     words: 1180,
     status: "Waiting for approval",
     updated: "Yesterday",
-    excerpt: "Volume discounts look obvious on paper. Storage, spoilage and cash flow change the maths.",
+    excerpt:
+      "Volume discounts look obvious on paper. Storage, spoilage and cash flow change the maths.",
   },
   {
     id: 3,

@@ -4,9 +4,9 @@ A lightweight worker agent that handles background tasks for Sightline. Runs one
 
 ## Features
 
-- **Job Queue**: Polls Firestore for tasks (audits, fixes, tracking, content generation)
+- **Job Queue**: Polls Firestore for tasks (audits, fixes — tracking and content generation are ⚠️ Not yet implemented, see "Firestore Job Types" below)
 - **GitHub Integration**: Opens PRs, manages changes via GitHub App
-- **LLM Tracking**: Runs prompts across OpenAI, Gemini, Perplexity, Claude
+- **LLM Tracking**: ⚠️ Not yet implemented — `track_prompts.py` / `verify_merge.py` are stubs returning hardcoded values, no LLM call yet
 - **SEO/AEO Audits**: Integrates with GEO Optimizer for site scoring
 - **Monitoring**: Telegram alerts for failures and cost tracking
 - **Async Processing**: Handles concurrent operations efficiently
@@ -42,6 +42,12 @@ ORG_ID=company-123
 GITHUB_PRIVATE_KEY=-----BEGIN RSA PRIVATE KEY-----\n...
 GITHUB_APP_ID=12345
 
+# Dashboard-to-VM webhook shared secret (required).
+# IMPORTANT: this MUST hold the SAME value as the Vercel server-side
+# WEBHOOK_SECRET — the dashboard signs each job payload with it and the VM
+# verifies the signature, so a mismatch fails EVERY job with 401.
+WEBHOOK_SECRET=your-random-secret-string
+
 # LLM APIs (required)
 OPENAI_API_KEY=sk-...
 GEMINI_API_KEY=AIza...
@@ -60,12 +66,14 @@ LOG_LEVEL=INFO
 
 ## Firestore Job Types
 
-1. **audit** - Run SEO/AEO audit via GEO Optimizer
-2. **fix** - Generate and PR fixes (sitemap, robots.txt, schema, etc)
-3. **track_prompts** - Run brand prompts across LLMs, store results
-4. **verify_after_merge** - Re-run prompts after PR merge to measure impact
-5. **generate_content** - Write and PR blog posts
-6. **sync_search_console** - Fetch impressions and clicks from Google
+1. **audit** - Run SEO/AEO audit via GEO Optimizer ✅ implemented (`src/skills/audit.py`)
+2. **fix** - Generate and PR fixes (sitemap, robots.txt, schema, etc) ✅ implemented (`src/skills/fix_pr.py`)
+3. **track_prompts** - ⚠️ Not yet implemented (stub in `src/skills/track_prompts.py` returns hardcoded values, no LLM call)
+4. **verify_merge** - ⚠️ Not yet implemented (stub in `src/skills/verify_merge.py` returns hardcoded values)
+5. **generate_content** - ⚠️ Not yet implemented (no content-generation job type in the worker)
+6. **sync_search_console** - ⚠️ Not yet implemented (no Search Console / `gscMetrics` integration; the dashboard Overview shows these as unavailable)
+
+> Collections `posts`, `experiments`, `baselines`, `evidence` from the plan are also not implemented.
 
 ## Architecture
 

@@ -1,21 +1,32 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { toast } from "sonner";
 import { FlowShell, Note } from "@/components/flow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { brand, suggestedPrompts } from "@/lib/mock-data";
+import { getOrgId, useAuthUser } from "@/lib/auth";
+import { suggestedPrompts } from "@/lib/mock-data";
+import { saveSiteDoc, useSiteDoc } from "@/lib/queries";
+import { requireAuth } from "@/lib/route-guards";
 
 export const Route = createFileRoute("/onboarding")({
+  beforeLoad: async ({ context, location }) => {
+    await requireAuth(context.auth, location.href);
+  },
   head: () => ({
     meta: [
       { title: "Set up your site — Sightline" },
       {
         name: "description",
-        content: "Add your website, brand, industry, competitors and the prompts you want tracked across AI models.",
+        content:
+          "Add your website, brand, industry, competitors and the prompts you want tracked across AI models.",
       },
       { property: "og:title", content: "Set up your site — Sightline" },
-      { property: "og:description", content: "About two minutes. We pre-fill the prompts for you." },
+      {
+        property: "og:description",
+        content: "About two minutes. We pre-fill the prompts for you.",
+      },
     ],
   }),
   component: Onboarding,
@@ -23,18 +34,52 @@ export const Route = createFileRoute("/onboarding")({
 
 function Onboarding() {
   const navigate = useNavigate();
+  const { user } = useAuthUser();
+  const siteQuery = useSiteDoc();
+  const existing = siteQuery.data;
+
+  // The suggestion template is static reference content; the user's own list
+  // (persisted to their site doc) starts as a copy they can edit freely.
   const [stage, setStage] = useState(0);
-  const [site, setSite] = useState(brand.site);
-  const [name, setName] = useState(brand.name);
-  const [industry, setIndustry] = useState(brand.industry);
-  const [competitors, setCompetitors] = useState(brand.competitors);
-  const [list, setList] = useState(suggestedPrompts);
+  const [site, setSite] = useState(existing?.url ?? "");
+  const [name, setName] = useState(existing?.brand ?? "");
+  const [industry, setIndustry] = useState(existing?.industry ?? "");
+  const [competitors, setCompetitors] = useState<string[]>(
+    existing && existing.competitors.length > 0 ? existing.competitors : ["", ""],
+  );
+  const [list, setList] = useState<string[]>(
+    existing && existing.tracked_prompts.length > 0
+      ? existing.tracked_prompts
+      : [...suggestedPrompts.slice(0, 20)],
+  );
   const [editing, setEditing] = useState<number | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const handleFinish = async () => {
+    if (!user) {
+      toast.error("You must be signed in.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await saveSiteDoc(getOrgId(user), {
+        url: site.trim(),
+        brand: name.trim(),
+        industry: industry.trim(),
+        competitors: competitors.map((c) => c.trim()).filter((c) => c !== ""),
+        tracked_prompts: list.map((p) => p.trim()).filter((p) => p !== ""),
+      });
+      void navigate({ to: "/first-audit" });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't save your site.");
+      setSaving(false);
+    }
+  };
 
   return (
     <FlowShell
       step={2}
-      title={stage === 0 ? "Tell us about the site" : "Your 20 tracked prompts"}
+      title={stage === 0 ? "Tell us about the site" : "Your tracked prompts"}
       lede={
         stage === 0
           ? "About two minutes. You can change all of this later."
@@ -57,13 +102,31 @@ function Onboarding() {
           }}
         >
           <Field label="Website URL">
-            <Input className="h-11" value={site} onChange={(e) => setSite(e.target.value)} required />
+            <Input
+              className="h-11"
+              value={site}
+              onChange={(e) => setSite(e.target.value)}
+              placeholder="https://example.com"
+              required
+            />
           </Field>
           <Field label="Brand name">
-            <Input className="h-11" value={name} onChange={(e) => setName(e.target.value)} required />
+            <Input
+              className="h-11"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Acme"
+              required
+            />
           </Field>
           <Field label="Industry">
-            <Input className="h-11" value={industry} onChange={(e) => setIndustry(e.target.value)} required />
+            <Input
+              className="h-11"
+              value={industry}
+              onChange={(e) => setIndustry(e.target.value)}
+              placeholder="B2B ecommerce"
+              required
+            />
           </Field>
           <Field label="Competitors (2–3)">
             <div className="space-y-2">
@@ -72,6 +135,7 @@ function Onboarding() {
                   key={i}
                   className="h-11"
                   value={c}
+                  placeholder="competitor.com"
                   onChange={(e) => {
                     const next = [...competitors];
                     next[i] = e.target.value;
@@ -132,9 +196,10 @@ function Onboarding() {
           <div className="mt-8 flex gap-3">
             <Button
               className="h-11 px-6 text-sm font-semibold"
-              onClick={() => navigate({ to: "/connect-google" })}
+              disabled={saving}
+              onClick={handleFinish}
             >
-              Looks good, continue
+              {saving ? "Saving…" : "Looks good, continue"}
             </Button>
             <Button variant="ghost" className="h-11 text-sm" onClick={() => setStage(0)}>
               Back

@@ -4,8 +4,9 @@ Complete these steps to get Sightline fully operational.
 
 ## ✅ Completed
 
-- [x] Frontend code (Next.js)
-- [x] Backend code (Hermes worker)
+- [x] Frontend code (TanStack Start + Vite — real Firebase Auth, Firestore reads, server-function job submission)
+- [x] Backend code (Hermes worker — real `audit` + `fix` skills, webhook, worker, job processor, monitoring; `track_prompts` / `verify_merge` still stubs — see backend-vm/README.md)
+- [x] Backend tests (`backend-vm/tests/`, run with `pytest`; requires `pytest` installed)
 - [x] Documentation
 - [x] Firebase project created
 - [x] GitHub repository
@@ -52,10 +53,15 @@ service cloud.firestore {
       allow write: if false;
     }
     
-    // Sites - customers can read/write their own
+    // Sites - customers can read/write their own.
+    // NOTE: writes check the INCOMING doc (request.resource) because a
+    // brand-new site doc has no existing resource.data to compare against —
+    // using resource.data here would deny every first-time site save.
     match /sites/{siteId} {
-      allow read, write: if request.auth != null && 
-                           resource.data.org_id == request.auth.uid;
+      allow read: if request.auth != null &&
+                    resource.data.org_id == request.auth.uid;
+      allow create, update: if request.auth != null &&
+                              request.resource.data.org_id == request.auth.uid;
     }
     
     // Changes - customers can read their own
@@ -164,7 +170,9 @@ See [backend-vm/DEPLOYMENT.md](backend-vm/DEPLOYMENT.md) for:
 ### 6. Frontend Deployment
 
 #### 6.1 Update Frontend Env
-In Vercel dashboard, set environment variables:
+In Vercel dashboard, set environment variables.
+
+Public client config (safe — `VITE_` vars are inlined into the client bundle):
 ```
 VITE_FIREBASE_API_KEY=AIzaSyCx3FGqQa4HHfqHpwTIQqiQ1pvIXXxyMuE
 VITE_FIREBASE_AUTH_DOMAIN=sightline-9d056.firebaseapp.com
@@ -173,8 +181,32 @@ VITE_FIREBASE_STORAGE_BUCKET=sightline-9d056.firebasestorage.app
 VITE_FIREBASE_MESSAGING_SENDER_ID=87733199809
 VITE_FIREBASE_APP_ID=1:87733199809:web:91c8a9db704e8d7656c540
 VITE_WEBHOOK_URL=https://your-vm-ip:8000/webhook/job
-VITE_WEBHOOK_SECRET=your-webhook-secret
 ```
+
+Server-only secrets (no `VITE_` prefix — set in the Vercel server / function
+environment, matching what `frontend-vercel/src/lib/jobs-server.ts` actually
+reads via `process.env`: `WEBHOOK_SECRET` and `WEBHOOK_URL`):
+```
+WEBHOOK_SECRET=your-webhook-secret
+WEBHOOK_URL=https://your-vm-ip:8000/webhook/job
+```
+
+> ⚠️ CRITICAL — SHARED SECRET COUPLING: the Vercel server-side
+> `WEBHOOK_SECRET` above and the VM's `WEBHOOK_SECRET` (see
+> `backend-vm/DEPLOYMENT.md` Configuration) MUST hold the SAME value. The
+> dashboard signs each job payload with HMAC-SHA256 under that secret and
+> the VM verifies it in `backend-vm/src/webhook.py::_verify_signature` — if
+> the two values differ, EVERY job submission fails with `401 "Invalid
+> webhook signature"`. Set both to the same random string.
+
+> ⚠️ SECURITY WARNING: never create a `VITE_`-prefixed webhook secret variable
+> (i.e. do not put `WEBHOOK_SECRET` behind a `VITE_` prefix). Any `VITE_`-prefixed
+> variable is inlined into the client JavaScript bundle at build time and is
+> readable by anyone who opens the site. The webhook HMAC secret must stay
+> server-only: the browser calls the TanStack Start server function `submitJobFn`
+> (`frontend-vercel/src/lib/jobs-server.ts`), which signs the request with
+> `WEBHOOK_SECRET` on the server and forwards it to the VM. If you previously
+> set a `VITE_`-prefixed webhook secret, delete it from Vercel and rotate the secret.
 
 #### 6.2 Deploy Frontend
 - [ ] Push to GitHub (triggers Vercel build)

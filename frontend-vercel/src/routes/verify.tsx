@@ -1,12 +1,22 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
+import { toast } from "sonner";
 import { FlowShell, Note } from "@/components/flow";
 import { Button } from "@/components/ui/button";
+import { useAuthUser } from "@/lib/auth";
+import { requireAuth } from "@/lib/route-guards";
 
 export const Route = createFileRoute("/verify")({
+  beforeLoad: async ({ context, location }) => {
+    await requireAuth(context.auth, location.href);
+  },
   head: () => ({
     meta: [
       { title: "Verify your email — Sightline" },
-      { name: "description", content: "Click the one-click link we emailed you and continue to onboarding." },
+      {
+        name: "description",
+        content: "Click the one-click link we emailed you and continue to onboarding.",
+      },
       { property: "og:title", content: "Verify your email — Sightline" },
       { property: "og:description", content: "One click and you're on to setup." },
     ],
@@ -15,14 +25,36 @@ export const Route = createFileRoute("/verify")({
 });
 
 function Verify() {
+  const navigate = useNavigate();
+  const { auth } = Route.useRouteContext();
+  const { user } = useAuthUser();
+  const [resending, setResending] = useState(false);
+
+  const handleResend = async () => {
+    setResending(true);
+    try {
+      const { resendVerificationEmail } = await import("@/lib/auth");
+      await resendVerificationEmail();
+      toast.success("Verification email sent. Check your inbox (and spam).");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't resend the email.");
+    } finally {
+      setResending(false);
+    }
+  };
+
   return (
     <FlowShell
       step={1}
       title="Check your inbox"
-      lede="We sent a one-click link to you@company.com. It drops you straight into setup."
+      lede={
+        user?.email
+          ? `We sent a verification link to ${user.email}. It drops you straight into setup.`
+          : "We sent you a verification link. It drops you straight into setup."
+      }
       aside={
         <Note>
-          Nothing arrived? Check spam, or resend below. The link stays valid for 24 hours.
+          Nothing arrived? Check spam, or resend below. You can also continue now and verify later.
         </Note>
       }
     >
@@ -39,13 +71,36 @@ function Verify() {
           </div>
         </div>
         <div className="mt-6 flex flex-wrap gap-3">
-          <Button asChild className="h-11 px-6 text-sm font-semibold">
-            <Link to="/onboarding">Open the verification link</Link>
+          <Button
+            className="h-11 px-6 text-sm font-semibold"
+            onClick={() => navigate({ to: "/onboarding" })}
+          >
+            Continue to onboarding
           </Button>
-          <Button variant="ghost" className="h-11 text-sm">
-            Resend email
+          <Button
+            variant="ghost"
+            className="h-11 text-sm"
+            disabled={resending}
+            onClick={handleResend}
+          >
+            {resending ? "Sending…" : "Resend email"}
           </Button>
         </div>
+        <p className="mt-4 text-xs text-muted-foreground">
+          Signed in as {user?.email ?? "…"}. Wrong account?{" "}
+          <button
+            className="font-medium text-signal underline underline-offset-4"
+            onClick={() => {
+              void auth.signOutUser().then(() => navigate({ to: "/" }));
+            }}
+          >
+            Sign out
+          </button>{" "}
+          ·{" "}
+          <Link to="/onboarding" className="font-medium text-signal underline underline-offset-4">
+            Skip verification for now
+          </Link>
+        </p>
       </div>
     </FlowShell>
   );

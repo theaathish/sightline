@@ -13,7 +13,12 @@ class Config:
         self.firebase_credentials = os.getenv("FIREBASE_CREDENTIALS_JSON", "{}")
         self.github_private_key = os.getenv("GITHUB_PRIVATE_KEY", "")
         self.github_app_id = os.getenv("GITHUB_APP_ID", "0")
-        self.github_webhook_secret = os.getenv("GITHUB_WEBHOOK_SECRET", "")
+        # Dashboard-to-VM webhook shared secret (HMAC-SHA256). Canonical name
+        # is WEBHOOK_SECRET; GITHUB_WEBHOOK_SECRET is a deprecated alias kept
+        # for backwards compatibility with already-deployed VMs and can be
+        # removed once deployments are migrated. This secret is NOT a GitHub
+        # webhook secret — nothing here verifies GitHub webhooks.
+        self.webhook_secret = os.getenv("WEBHOOK_SECRET", "") or os.getenv("GITHUB_WEBHOOK_SECRET", "")
         
         # LLM APIs (OPTIONAL - only needed for AI visibility tracking)
         self.openai_api_key = os.getenv("OPENAI_API_KEY", "")

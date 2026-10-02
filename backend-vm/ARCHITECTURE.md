@@ -6,15 +6,15 @@ Hermes is a background worker that processes jobs from Firestore. It runs as one
 
 - SEO/AEO audits
 - Automated fixes via GitHub PRs
-- AI visibility tracking across LLMs
-- Content generation and publishing
+- AI visibility tracking across LLMs (⚠️ Not yet implemented — stub)
+- Content generation and publishing (⚠️ Not yet implemented)
 
 ## High-Level Architecture
 
 ```
 ┌─────────────────┐
 │   Dashboard     │
-│  (Next.js on    │
+│  (TanStack Start + Vite on │
 │   Vercel)       │
 └────────┬────────┘
          │
@@ -92,6 +92,7 @@ Modular task handlers. Each skill is responsible for one type of work.
 - **Cost:** ~$1.00 per PR
 
 #### Track Prompts Skill (`src/skills/track_prompts.py`)
+> ⚠️ Not yet implemented — still a stub returning hardcoded values, no LLM call.
 - **Input:** prompts, brand, models
 - **Output:** mentions, position, sources
 - **Integration:** OpenAI, Gemini, Anthropic, Perplexity APIs
@@ -99,6 +100,7 @@ Modular task handlers. Each skill is responsible for one type of work.
 - **Cost:** ~$2.50 per tracking cycle
 
 #### Verify Merge Skill (`src/skills/verify_merge.py`)
+> ⚠️ Not yet implemented — still a stub returning hardcoded values.
 - **Input:** pr_number, baseline_run_id
 - **Output:** mention/position change, confidence
 - **Compares:** before/after metrics

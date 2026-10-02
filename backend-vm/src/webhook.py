@@ -93,6 +93,13 @@ class WebhookHandler:
     async def _verify_signature(self, request: Request):
         """Verify webhook signature from Vercel"""
         try:
+            # Fail closed: without a configured secret, hmac.new("") would
+            # still produce a "valid" signature under an empty key, so reject
+            # outright instead of authenticating with an empty key.
+            webhook_secret = self.config.webhook_secret
+            if not webhook_secret:
+                raise ValueError("Webhook secret is not configured")
+
             # Get signature from header
             signature = request.headers.get("X-Webhook-Signature")
             if not signature:
@@ -103,7 +110,7 @@ class WebhookHandler:
             
             # Verify using shared secret
             expected = hmac.new(
-                self.config.github_webhook_secret.encode(),
+                webhook_secret.encode(),
                 body,
                 hashlib.sha256
             ).hexdigest()

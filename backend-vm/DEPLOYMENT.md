@@ -42,7 +42,8 @@ ORG_ID=dev-company
 # GitHub App
 GITHUB_PRIVATE_KEY='-----BEGIN RSA PRIVATE KEY-----\n...'
 GITHUB_APP_ID=123456
-GITHUB_WEBHOOK_SECRET=your-secret
+# Dashboard-to-VM webhook shared secret. MUST equal the Vercel WEBHOOK_SECRET.
+WEBHOOK_SECRET=your-secret
 
 # LLM APIs
 OPENAI_API_KEY=sk-...
@@ -234,6 +235,12 @@ curl http://localhost:8000/webhook/health
 
 ## Configuration
 
+> **IMPORTANT — shared secret coupling:** the Vercel server-side
+> `WEBHOOK_SECRET` and the VM's `WEBHOOK_SECRET` MUST hold the SAME value.
+> The dashboard signs each job payload with HMAC-SHA256 under that secret
+> and the VM verifies it — if the two values differ, EVERY job submission
+> fails with `401 "Invalid webhook signature"`.
+
 ### Environment Variables
 
 | Variable | Required | Default | Description |
@@ -242,7 +249,7 @@ curl http://localhost:8000/webhook/health
 | `ORG_ID` | ✅ | - | Organization identifier |
 | `GITHUB_PRIVATE_KEY` | ✅ | - | GitHub App private key |
 | `GITHUB_APP_ID` | ✅ | - | GitHub App ID |
-| `GITHUB_WEBHOOK_SECRET` | ✅ | - | Webhook signature secret |
+| `WEBHOOK_SECRET` | ✅ | - | Dashboard-to-VM webhook shared secret — MUST hold the SAME value as the Vercel server-side `WEBHOOK_SECRET` (HMAC verification fails on any mismatch). `GITHUB_WEBHOOK_SECRET` is a deprecated alias for this value, kept for backwards compatibility with already-deployed VMs |
 | `OPENAI_API_KEY` | ✅ | - | OpenAI API key |
 | `GEMINI_API_KEY` | ❌ | - | Google Gemini API key |
 | `PERPLEXITY_API_KEY` | ❌ | - | Perplexity API key |
@@ -292,9 +299,13 @@ The worker uses these Firestore collections:
 /changes/{id}
   - org_id: string
   - timestamp: timestamp
-  - pr_link: string
+  - pr_number: number
+  - pr_url: string
+  - files_written: array of strings
+  - fixes_applied: array of strings
+  - repo: string
+  - branch: string
   - reason: string
-  - files_touched: array
 ```
 
 ## Monitoring & Logs
@@ -426,7 +437,7 @@ curl http://localhost:8000/webhook/health
 sudo ufw allow 8000
 
 # Verify webhook signature if signing
-# Use the GITHUB_WEBHOOK_SECRET from .env
+# Use the WEBHOOK_SECRET from .env (must match the Vercel WEBHOOK_SECRET)
 ```
 
 ## Scaling

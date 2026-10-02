@@ -53,7 +53,8 @@ export function Metric({
       </div>
       {delta !== undefined && (
         <p className="mt-1.5">
-          <Delta value={delta} /> <span className="text-xs text-muted-foreground">vs last week</span>
+          <Delta value={delta} />{" "}
+          <span className="text-xs text-muted-foreground">vs last week</span>
         </p>
       )}
     </div>
@@ -84,7 +85,9 @@ export function Tag({
 
 export function EmptyNote({ children }: { children: ReactNode }) {
   return (
-    <div className="rounded-lg border border-dashed bg-surface p-4 text-sm text-muted-foreground">{children}</div>
+    <div className="rounded-lg border border-dashed bg-surface p-4 text-sm text-muted-foreground">
+      {children}
+    </div>
   );
 }
 

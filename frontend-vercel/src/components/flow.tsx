@@ -21,7 +21,11 @@ export function StepBar({ current }: { current: number }) {
         <div key={s} className="flex items-center gap-2">
           <span
             className={`text-[11px] uppercase tracking-[0.14em] ${
-              i === current ? "text-signal" : i < current ? "text-foreground" : "text-muted-foreground"
+              i === current
+                ? "text-signal"
+                : i < current
+                  ? "text-foreground"
+                  : "text-muted-foreground"
             }`}
           >
             {s}

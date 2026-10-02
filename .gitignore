@@ -1,4 +1,6 @@
 # Sensitive files
+# NOTE: "credital.txt" is a literal filename (typo of "credentials") — a local
+# Firebase web-config scratch file. Keep ignored; never commit it.
 credital.txt
 Full Plan.md
 

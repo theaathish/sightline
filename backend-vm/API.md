@@ -56,6 +56,12 @@ X-Webhook-Signature: <HMAC-SHA256 signature>
 
 Jobs must be signed with HMAC-SHA256 using the shared secret.
 
+> **IMPORTANT — shared secret coupling:** the Vercel server-side
+> `WEBHOOK_SECRET` and the VM's `WEBHOOK_SECRET` MUST hold the SAME value.
+> The dashboard signs the raw JSON job body with HMAC-SHA256 under that
+> secret and the VM verifies it in `_verify_signature` — if the two values
+> differ, EVERY job submission fails with `401 "Invalid webhook signature"`.
+
 **Generate Signature (Node.js):**
 ```javascript
 const crypto = require('crypto');
@@ -67,7 +73,7 @@ const body = JSON.stringify({
 });
 
 const signature = crypto
-  .createHmac('sha256', process.env.GITHUB_WEBHOOK_SECRET)
+  .createHmac('sha256', process.env.WEBHOOK_SECRET)
   .update(body)
   .digest('hex');
 
@@ -88,7 +94,7 @@ body = json.dumps({
 })
 
 signature = hmac.new(
-    os.getenv("GITHUB_WEBHOOK_SECRET").encode(),
+    os.getenv("WEBHOOK_SECRET").encode(),
     body.encode(),
     hashlib.sha256
 ).hexdigest()

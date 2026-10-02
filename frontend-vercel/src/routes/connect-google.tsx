@@ -1,17 +1,25 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { FlowShell, Note } from "@/components/flow";
 import { Button } from "@/components/ui/button";
+import { requireAuth } from "@/lib/route-guards";
 
 export const Route = createFileRoute("/connect-google")({
+  beforeLoad: async ({ context, location }) => {
+    await requireAuth(context.auth, location.href);
+  },
   head: () => ({
     meta: [
       { title: "Connect Search Console — Sightline" },
       {
         name: "description",
-        content: "Optional: connect Google Search Console for clicks and impressions. The dashboard works without it.",
+        content:
+          "Optional: connect Google Search Console for clicks and impressions. The dashboard works without it.",
       },
       { property: "og:title", content: "Connect Search Console — Sightline" },
-      { property: "og:description", content: "Optional step. Skip it and connect later from Settings." },
+      {
+        property: "og:description",
+        content: "Optional step. Skip it and connect later from Settings.",
+      },
     ],
   }),
   component: ConnectGoogle,
@@ -29,12 +37,20 @@ function ConnectGoogle() {
         <div className="grid gap-px bg-border sm:grid-cols-2">
           <Panel
             title="With Search Console"
-            items={["Real clicks and impressions", "Query-level wins and losses", "Indexing issues surfaced in Audit"]}
+            items={[
+              "Real clicks and impressions",
+              "Query-level wins and losses",
+              "Indexing issues surfaced in Audit",
+            ]}
             highlight
           />
           <Panel
             title="Without it"
-            items={["SEO health score", "AI visibility across 4 models", "Audit issues and blog drafts"]}
+            items={[
+              "SEO health score",
+              "AI visibility across 4 models",
+              "Audit issues and blog drafts",
+            ]}
           />
         </div>
         <div className="flex flex-wrap items-center gap-3 p-6">
@@ -50,7 +66,15 @@ function ConnectGoogle() {
   );
 }
 
-function Panel({ title, items, highlight }: { title: string; items: string[]; highlight?: boolean }) {
+function Panel({
+  title,
+  items,
+  highlight,
+}: {
+  title: string;
+  items: string[];
+  highlight?: boolean;
+}) {
   return (
     <div className={`p-6 ${highlight ? "bg-signal-soft" : "bg-card"}`}>
       <p className="font-display text-sm font-semibold uppercase tracking-[0.12em]">{title}</p>

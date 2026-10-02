@@ -4,8 +4,17 @@ import { Wordmark } from "@/components/flow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { missingFirebaseEnvVars } from "@/lib/firebase";
 
 export const Route = createFileRoute("/")({
+  beforeLoad: async ({ context }) => {
+    // Signed-in users skip the marketing signup and go to the product.
+    const user = await context.auth.getCurrentUser();
+    if (user) {
+      const { redirect } = await import("@tanstack/react-router");
+      throw redirect({ to: "/dashboard" });
+    }
+  },
   head: () => ({
     meta: [
       { title: "Sightline — see how search and AI describe your site" },
@@ -17,17 +26,71 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "Sightline — see how search and AI describe your site" },
       {
         property: "og:description",
-        content: "SEO health, AI mention tracking and ready-to-approve blog drafts in one dashboard.",
+        content:
+          "SEO health, AI mention tracking and ready-to-approve blog drafts in one dashboard.",
       },
     ],
   }),
   component: SignUp,
 });
 
+function friendlyAuthError(error: unknown): string {
+  if (error instanceof Error) {
+    if (error.message.includes("auth/email-already-in-use")) {
+      return "That email already has an account. Log in instead.";
+    }
+    if (error.message.includes("auth/weak-password")) {
+      return "Password must be at least 6 characters.";
+    }
+    if (error.message.includes("auth/invalid-email")) {
+      return "That email address doesn't look right.";
+    }
+    if (error.message.includes("auth/popup-closed-by-user")) {
+      return "The Google sign-in popup was closed before finishing.";
+    }
+    if (error.message.includes("auth/unauthorized-domain")) {
+      return "This domain is not authorized for Google sign-in. Add it in Firebase Console → Authentication → Settings.";
+    }
+    return error.message;
+  }
+  return "Couldn't create your account. Try again.";
+}
+
 function SignUp() {
   const navigate = useNavigate();
+  const { auth } = Route.useRouteContext();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState<"email" | "google" | null>(null);
+
+  const missingEnv = missingFirebaseEnvVars();
+
+  const handleEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setBusy("email");
+    try {
+      await auth.signUpWithEmail(email.trim(), password);
+      void navigate({ to: "/verify" });
+    } catch (err) {
+      setError(friendlyAuthError(err));
+      setBusy(null);
+    }
+  };
+
+  const handleGoogle = async () => {
+    setError(null);
+    setBusy("google");
+    try {
+      await auth.signInWithGoogle();
+      // Google already verifies the email address, so skip /verify.
+      void navigate({ to: "/onboarding" });
+    } catch (err) {
+      setError(friendlyAuthError(err));
+      setBusy(null);
+    }
+  };
 
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-2">
@@ -40,13 +103,21 @@ function SignUp() {
               Two minutes of setup. Your score lands before you leave the page.
             </p>
 
+            {missingEnv.length > 0 && (
+              <p className="mt-6 rounded-lg border border-l-2 border-l-signal bg-signal-soft p-4 text-sm">
+                Sign-up is not configured yet. Missing: <strong>{missingEnv.join(", ")}</strong>.
+                Set them in Vercel (or a local .env file) — see README.md.
+              </p>
+            )}
+
             <Button
               variant="outline"
               className="mt-8 h-11 w-full justify-center gap-3 text-sm font-medium"
-              onClick={() => navigate({ to: "/verify" })}
+              disabled={busy !== null || missingEnv.length > 0}
+              onClick={handleGoogle}
             >
               <GoogleMark />
-              Continue with Google
+              {busy === "google" ? "Connecting…" : "Continue with Google"}
             </Button>
 
             <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-[0.18em] text-muted-foreground">
@@ -55,13 +126,7 @@ function SignUp() {
               <span className="h-px flex-1 bg-border" />
             </div>
 
-            <form
-              className="space-y-4"
-              onSubmit={(e) => {
-                e.preventDefault();
-                navigate({ to: "/verify" });
-              }}
-            >
+            <form className="space-y-4" onSubmit={handleEmail}>
               <div className="space-y-2">
                 <Label htmlFor="email">Work email</Label>
                 <Input
@@ -80,14 +145,24 @@ function SignUp() {
                   id="password"
                   type="password"
                   required
-                  placeholder="At least 8 characters"
+                  minLength={6}
+                  placeholder="At least 6 characters"
                   className="h-11"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
-              <Button type="submit" className="h-11 w-full text-sm font-semibold">
-                Create account
+              {error && (
+                <p role="alert" className="rounded-md bg-signal-soft px-3 py-2 text-sm text-signal">
+                  {error}
+                </p>
+              )}
+              <Button
+                type="submit"
+                className="h-11 w-full text-sm font-semibold"
+                disabled={busy !== null || missingEnv.length > 0}
+              >
+                {busy === "email" ? "Creating account…" : "Create account"}
               </Button>
             </form>
 
@@ -108,7 +183,8 @@ function SignUp() {
         <div className="absolute inset-0 rule-grid opacity-60" />
         <div className="relative flex h-full flex-col justify-center gap-8 px-14">
           <p className="max-w-md font-display text-2xl font-semibold leading-snug">
-            “We could see our SEO score. We couldn't see that ChatGPT was recommending our competitor.”
+            “We could see our SEO score. We couldn't see that ChatGPT was recommending our
+            competitor.”
           </p>
           <div className="grid max-w-md gap-4">
             <Stat value="72" label="SEO health score" />

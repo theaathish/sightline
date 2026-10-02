@@ -40,6 +40,11 @@ FIREBASE_CREDENTIALS_JSON='{"type":"service_account",...}'
 ORG_ID=test-company
 GITHUB_PRIVATE_KEY='-----BEGIN RSA PRIVATE KEY-----\n...'
 GITHUB_APP_ID=123456
+# Dashboard-to-VM webhook shared secret.
+# IMPORTANT: this MUST hold the SAME value as the Vercel server-side
+# WEBHOOK_SECRET — signing and verification must agree, or every job fails
+# with 401 "Invalid webhook signature".
+WEBHOOK_SECRET=your-random-secret-string
 OPENAI_API_KEY=sk-...
 GEMINI_API_KEY=AIza...
 TELEGRAM_BOT_TOKEN=123456:ABC...

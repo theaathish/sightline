@@ -28,8 +28,8 @@ class JobProcessor:
         self.monitor = monitor
         
         # Initialize skills
-        self.audit_skill = AuditSkill(config)
-        self.fix_pr_skill = FixPRSkill(config)
+        self.audit_skill = AuditSkill(config, firebase)
+        self.fix_pr_skill = FixPRSkill(config, firebase)
         self.track_skill = TrackPromptsSkill(config)
         self.verify_skill = VerifyMergeSkill(config)
     

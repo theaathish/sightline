@@ -77,7 +77,11 @@ ORG_ID=test-company
 # GitHub App (REQUIRED)
 GITHUB_PRIVATE_KEY='-----BEGIN RSA PRIVATE KEY-----\n...'
 GITHUB_APP_ID=123456
-GITHUB_WEBHOOK_SECRET=your-secret
+# Dashboard-to-VM webhook shared secret.
+# IMPORTANT: this MUST hold the SAME value as the Vercel server-side
+# WEBHOOK_SECRET — signing and verification must agree, or every job fails
+# with 401 "Invalid webhook signature".
+WEBHOOK_SECRET=your-secret
 
 # LLM APIs (LEAVE EMPTY - AI tracking disabled)
 OPENAI_API_KEY=
@@ -252,8 +256,8 @@ Add AI tracking when:
 - ❌ No AI tracking
 
 ### Phase 2 (Growth - 6 months)
-- ✅ Content generation
-- ✅ Search Console sync
+- ⚠️ Content generation — Not yet implemented (no `generate_content` job type)
+- ⚠️ Search Console sync — Not yet implemented (no `gscMetrics`; dashboard Overview shows these as unavailable)
 - ✅ Weekly reports
 - ❌ Still no AI tracking
 
